@@ -157,6 +157,17 @@ THEN
     pp.t1 = scalar_coord(cm, 'time').units.num2date(scalar_coord(cm, 'time').bounds[0,0])
     pp.t2 = scalar_coord(cm, 'time').units.num2date(scalar_coord(cm, 'time').bounds[0,1])
     pp.lbft = scalar_coord(cm, 'forecast_period').points[0]
+    
+IF
+    # XXX Note the repetition of the previous rule's constraints
+    scalar_coord(cm, 'time') is not None
+    scalar_coord(cm, 'time').has_bounds()
+    scalar_coord(cm, 'clim_season') is None
+    scalar_coord(cm, 'forecast_period') is None
+THEN
+    pp.t1 = scalar_coord(cm, 'time').units.num2date(scalar_coord(cm, 'time').bounds[0,0])
+    pp.t2 = scalar_coord(cm, 'time').units.num2date(scalar_coord(cm, 'time').bounds[0,1])
+    pp.lbtim.ib=2
 
 IF
     # XXX Note the repetition of the previous rule's constraints
