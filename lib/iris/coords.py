@@ -1597,3 +1597,51 @@ class _GroupIterator(collections.Iterator):
         group = _GroupbyItem(m, slice(self._start, stop))
         self._start = stop
         return group
+
+
+def _common_coord_index(cube, ref_cube, common_coord):
+    # also performs QA
+    if type(cube.coord(common_coord)) is not iris.coords.AuxCoord:
+        raise TypeError
+    
+    aux_cube_coord = cube.coord(common_coord)
+    dim_cube_coord = ref_cube.coord(common_coord)
+    aux_cube_dim, = cube.coord_dims(aux_cube_coord)
+    dim_cube_dim, = cube.coord_dims(dim_cube_coord)
+    s_aux_cube = [slice(None)] * len(cube.shape)
+    s_aux_cube[aux_cube_dim] = 0
+    s_dim_cube = [slice(None)] * len(ref_cube.shape)
+    s_dim_cube[dim_cube_dim] = 0
+    a = cube[tuple(s_aux_cube)]
+    a.attributes = None
+    a.cell_methods = None
+    b = ref_cube[tuple(s_dim_cube)]
+    b.attributes = None
+    b.cell_methods = None
+    if not a.is_compatible(b):
+        iris.util.describe_diff(a, b)
+        raise RuntimeError("Cubes are not compatible")
+    ind = []
+    for p in cube.coord(common_coord).points:
+        i = np.where(ref_cube.coord(common_coord).points == p)
+        ind.append(i[0][0])
+    
+    return dim_cube_dim, ind
+
+
+def broadcast_by_coord(cube, ref_cube, common_coord):   
+    dim_cube_dim, ind = _common_coord_index(cube, ref_cube, common_coord)
+
+    s = [slice(None)]*len(ref_cube.shape)
+    s[dim_cube_dim] = ind
+    new_data = ref_cube.data[tuple(s)]
+    new_cube = cube.copy()
+    new_cube.data = new_data
+    new_cube.history = "%s comparable to %s in terms of %s" % (ref_cube.name(),
+                                                               cube.name(),
+                                                               common_coord)
+    
+    return new_cube
+
+
+def operate_by_coord(cube, ref_cube): 
