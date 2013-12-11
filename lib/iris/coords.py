@@ -1644,4 +1644,6 @@ def broadcast_by_coord(cube, ref_cube, common_coord):
     return new_cube
 
 
-def operate_by_coord(cube, ref_cube): 
+def operate_by_coord(cube, ref_cube, common_coord, operator):
+    dim_cube_dim, ind = _common_coord_index(cube, ref_cube, common_coord)
+    
