@@ -1621,9 +1621,13 @@ def _common_coord_index(cube, ref_cube, common_coord):
     if not a.is_compatible(b):
         iris.util.describe_diff(a, b)
         raise RuntimeError("Cubes are not compatible")
+    
     ind = []
     for p in cube.coord(common_coord).points:
-        i = np.where(ref_cube.coord(common_coord).points == p)
+        try:
+            i = np.where(ref_cube.coord(common_coord).points == p)
+        except IndexError:
+            raise IndexError("Reference cube coordinate values do not match cube coordinate values.")
         ind.append(i[0][0])
     
     return dim_cube_dim, ind
@@ -1634,16 +1638,11 @@ def broadcast_by_coord(cube, ref_cube, common_coord):
 
     s = [slice(None)]*len(ref_cube.shape)
     s[dim_cube_dim] = ind
-    new_data = ref_cube.data[tuple(s)]
-    new_cube = cube.copy()
-    new_cube.data = new_data
+    new_cube = cube.copy(ref_cube.data[tuple(s)])
     new_cube.history = "%s comparable to %s in terms of %s" % (ref_cube.name(),
                                                                cube.name(),
                                                                common_coord)
+ 
+#    new_cube.remove_coord(new_cube.coord(dimensions=dim_cube_dim, dim_coords=True)[0])
     
     return new_cube
-
-
-def operate_by_coord(cube, ref_cube, common_coord, operator):
-    dim_cube_dim, ind = _common_coord_index(cube, ref_cube, common_coord)
-    

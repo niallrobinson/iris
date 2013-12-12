@@ -865,5 +865,54 @@ class TestDimCoordEquality(tests.IrisTest):
         self.assertIs(dim.__ne__(aux), NotImplemented)
 
 
+class TestCoordBroadcasting(tests.IrisTest):
+    def setUp(self):
+        data = [2, 4, 6, 2, 4, 6, 2, 2, 2, 6, 6, 4]
+        cube = iris.cube.Cube([[data]*3]*2)
+        cube.long_name = 'thingness'
+        cube.units = '1'
+    
+        y_points = np.array([2.5, 7.5, 10.5])
+        y_coord = iris.coords.DimCoord(y_points, long_name='bar', units='1')
+        cube.add_dim_coord(y_coord, 1)
+    
+        x_points = np.array([-7.5, 7.5])
+        x_coord = iris.coords.DimCoord(x_points, long_name='foo', units='1')
+        cube.add_dim_coord(x_coord, 0)
+    
+        time_coord = iris.coords.DimCoord(
+            np.array([347926., 347927., 347928., 347929., 347930., 347931.,
+                      347932., 347933., 347934., 347935., 347936., 347937.]),
+            standard_name='time',
+            units=iris.unit.Unit('days since 1970-01-01 00:00:00', calendar='gregorian'))
+        cube.add_dim_coord(time_coord, 2)
+    
+        spam_coord = iris.coords.AuxCoord(
+            np.array([1, 2, 3, 1, 2, 3, 1, 1, 1, 3, 3, 2]),
+            long_name='spam', units=iris.unit.Unit('1'))
+        cube.add_aux_coord(spam_coord, 2)
+        
+        ref_data = [2, 4, 6]
+        ref_cube = iris.cube.Cube([[ref_data]*3]*2, long_name='thingness', units='1')
+        ref_cube.add_dim_coord(y_coord, 1)
+        ref_cube.add_dim_coord(x_coord, 0)
+        ref_spam_coord = iris.coords.DimCoord(np.array([1, 2, 3]), long_name='spam', units='1')
+        ref_cube.add_dim_coord(ref_spam_coord, 2)
+        
+        self.cube = cube
+        self.ref_cube = ref_cube
+    
+    def test_coord_broadcast(self):
+        coord_broadcast_cube = iris.coords.broadcast_by_coord(self.cube, self.ref_cube, 'spam')
+        self.assertArrayEqual((self.cube - coord_broadcast_cube).data, np.zeros([2, 3, 12]))
+        
+    def test_bad_ref_vals(self):
+        new_points = self.cube.coord('spam').points.copy()
+        new_points[0] = 9999
+        self.cube.coord('spam').points = new_points
+        with self.assertRaises(IndexError):
+            coord_broadcast_cube = iris.coords.broadcast_by_coord(self.cube, self.ref_cube, 'spam')
+
+
 if __name__ == "__main__":
     tests.main()
