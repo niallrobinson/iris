@@ -22,6 +22,8 @@ Test the main loading API.
 from __future__ import (absolute_import, division, print_function)
 
 # import iris tests first so that some things can be initialised before importing anything else
+import os
+
 import iris.tests as tests
 
 import iris
@@ -102,6 +104,16 @@ class TestLoadCube(tests.IrisTest):
         )
         with self.assertRaises(iris.exceptions.ConstraintMismatchError):
             iris.load_cube(paths)
+
+    def test_change_pwd(self):
+        paths = (
+            tests.get_data_path(['PP', 'aPPglob1', 'global.pp']),
+        )
+        cube = iris.load_cube(paths)
+        this_p = os.getcwd()
+        os.chdir('../')
+        cube[0, 0, 0].data
+        os.chdir(this_p)
 
 
 @tests.skip_data
