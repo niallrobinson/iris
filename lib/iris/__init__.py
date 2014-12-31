@@ -243,6 +243,8 @@ def _generate_cubes(uris, callback, constraints):
     if isinstance(uris, basestring):
         uris = [uris]
 
+	uris = [os.path.abspath(p) for p in uris]
+
     # Group collections of uris by their iris handler
     # Create list of tuples relating schemes to part names
     uri_tuples = sorted(iris.io.decode_uri(uri) for uri in uris)
