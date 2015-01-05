@@ -112,7 +112,7 @@ class TestLoadCube(tests.IrisTest):
         cube = iris.load_cube(paths)
         this_p = os.getcwd()
         os.chdir('../')
-        cube[0, 0, 0].data
+        cube[0, 0].data
         os.chdir(this_p)
 
 
